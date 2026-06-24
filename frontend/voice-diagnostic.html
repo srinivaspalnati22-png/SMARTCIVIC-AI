@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant Diagnostics</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .test-section h2 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #666;
+            display: inline-block;
+        }
+
+        .status.success {
+            background: #4ade80;
+        }
+
+        .status.error {
+            background: #ef4444;
+        }
+
+        .status.warning {
+            background: #fbbf24;
+        }
+
+        button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+        }
+
+        .log-entry.success {
+            color: #4ade80;
+        }
+
+        .log-entry.error {
+            color: #ef4444;
+        }
+
+        .log-entry.info {
+            color: #60a5fa;
+        }
+
+        .log-entry.warning {
+            color: #fbbf24;
+        }
+
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 Voice Assistant Diagnostics</h1>
+        <p class="subtitle">Complete system check for SmartCivic voice assistant</p>
+
+        <!-- Test 1: Browser Support -->
+        <div class="test-section">
+            <h2><span class="status" id="status1"></span> 1. Browser Support</h2>
+            <button onclick="checkBrowserSupport()">Check Browser Compatibility</button>
+            <div id="result1" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Test 2: Speech Synthesis -->
+        <div class="test-section">
+            <h2><span class="status" id="status2"></span> 2. Text-to-Speech (Voice Output)</h2>
+            <button onclick="testSpeechSynthesis()">Test Voice Output</button>
+            <button onclick="listVoices()">List Available Voices</button>
+            <div id="result2" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Test 3: Speech Recognition -->
+        <div class="test-section">
+            <h2><span class="status" id="status3"></span> 3. Speech Recognition (Microphone)</h2>
+            <button onclick="testSpeechRecognition()">Test Microphone</button>
+            <button onclick="checkMicPermission()">Check Mic Permission</button>
+            <div id="result3" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Test 4: Voice Assistant Script -->
+        <div class="test-section">
+            <h2><span class="status" id="status4"></span> 4. Voice Assistant Script</h2>
+            <button onclick="checkVoiceAssistant()">Check Script Loaded</button>
+            <button onclick="testVoiceAssistantInit()">Test Initialization</button>
+            <div id="result4" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Test 5: Backend Connection -->
+        <div class="test-section">
+            <h2><span class="status" id="status5"></span> 5. Backend API</h2>
+            <button onclick="testBackend()">Test Backend Connection</button>
+            <button onclick="testGeminiAI()">Test Gemini AI Endpoint</button>
+            <div id="result5" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Console Log -->
+        <div class="test-section">
+            <h2>📋 Diagnostic Log</h2>
+            <div id="log" class="log"></div>
+            <button onclick="clearLog()">Clear Log</button>
+            <button onclick="runAllTests()">🚀 Run All Tests</button>
+        </div>
+    </div>
+
+    <script>
+        const log = (msg, type = 'info') => {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${time}] ${msg}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${msg}`);
+        };
+
+        const setStatus = (id, status) => {
+            const el = document.getElementById(`status${id}`);
+            el.className = `status ${status}`;
+        };
+
+        const showResult = (id, html) => {
+            const el = document.getElementById(`result${id}`);
+            el.innerHTML = html;
+            el.style.display = 'block';
+        };
+
+        const clearLog = () => {
+            document.getElementById('log').innerHTML = '';
+        };
+
+        // Test 1: Browser Support
+        function checkBrowserSupport() {
+            log('Checking browser support...', 'info');
+            let issues = [];
+            let passed = true;
+
+            // Check Speech Synthesis
+            if (!window.speechSynthesis) {
+                issues.push('❌ Speech Synthesis not supported');
+                passed = false;
+            } else {
+                issues.push('✅ Speech Synthesis supported');
+            }
+
+            // Check Speech Recognition
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) {
+                issues.push('❌ Speech Recognition not supported');
+                passed = false;
+            } else {
+                issues.push('✅ Speech Recognition supported');
+            }
+
+            // Browser detection
+            const browser = navigator.userAgent.includes('Chrome') ? 'Chrome' :
+                navigator.userAgent.includes('Firefox') ? 'Firefox' :
+                    navigator.userAgent.includes('Safari') ? 'Safari' : 'Other';
+            issues.push(`📱 Browser: ${browser}`);
+
+            if (browser !== 'Chrome' && browser !== 'Edge') {
+                issues.push('⚠️ Best results with Google Chrome');
+            }
+
+            setStatus(1, passed ? 'success' : 'error');
+            showResult(1, issues.join('<br>'));
+            log(passed ? 'Browser check passed' : 'Browser compatibility issues found', passed ? 'success' : 'error');
+        }
+
+        // Test 2: Speech Synthesis
+        async function testSpeechSynthesis() {
+            log('Testing speech synthesis...', 'info');
+
+            const voices = speechSynthesis.getVoices();
+            log(`Found ${voices.length} voices`, voices.length > 0 ? 'success' : 'warning');
+
+            if (voices.length === 0) {
+                log('Waiting for voices to load...', 'warning');
+                await new Promise(resolve => {
+                    speechSynthesis.onvoiceschanged = () => {
+                        const loadedVoices = speechSynthesis.getVoices();
+                        log(`Voices loaded: ${loadedVoices.length}`, 'success');
+                        resolve();
+                    };
+                    setTimeout(resolve, 2000);
+                });
+            }
+
+            try {
+                const utterance = new SpeechSynthesisUtterance("Testing voice output. Can you hear me?");
+                utterance.volume = 1.0;
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+
+                utterance.onstart = () => {
+                    log('🔊 Speech started!', 'success');
+                    setStatus(2, 'success');
+                };
+
+                utterance.onend = () => {
+                    log('✅ Speech completed!', 'success');
+                    showResult(2, '✅ Voice output is working! You should have heard audio.');
+                };
+
+                utterance.onerror = (e) => {
+                    log(`❌ Speech error: ${e.error}`, 'error');
+                    setStatus(2, 'error');
+                    showResult(2, `❌ Error: ${e.error}`);
+                };
+
+                speechSynthesis.speak(utterance);
+                log('Speech synthesis command sent', 'info');
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+                setStatus(2, 'error');
+                showResult(2, `❌ Exception: ${e.message}`);
+            }
+        }
+
+        function listVoices() {
+            const voices = speechSynthesis.getVoices();
+            log(`Listing ${voices.length} voices...`, 'info');
+
+            if (voices.length === 0) {
+                showResult(2, '⚠️ No voices loaded yet. Wait a moment and try again.');
+                setStatus(2, 'warning');
+                return;
+            }
+
+            const voiceList = voices.map((v, i) =>
+                `${i + 1}. ${v.name} (${v.lang}) ${v.default ? '⭐ DEFAULT' : ''}`
+            ).join('<br>');
+
+            showResult(2, `<strong>Available Voices:</strong><br>${voiceList}`);
+            setStatus(2, 'success');
+        }
+
+        // Test 3: Speech Recognition
+        async function testSpeechRecognition() {
+            log('Testing speech recognition...', 'info');
+
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) {
+                log('❌ Speech recognition not available', 'error');
+                setStatus(3, 'error');
+                showResult(3, '❌ Speech recognition not supported in this browser. Use Google Chrome.');
+                return;
+            }
+
+            try {
+                const recognition = new SR();
+                recognition.lang = 'en-IN';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                showResult(3, '🎤 Listening... Please speak now!');
+                log('🎤 Microphone activated - speak now!', 'info');
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    const confidence = event.results[0][0].confidence;
+                    log(`✅ Heard: "${transcript}" (${(confidence * 100).toFixed(1)}% confidence)`, 'success');
+                    setStatus(3, 'success');
+                    showResult(3, `✅ Success! Heard: "${transcript}"<br>Confidence: ${(confidence * 100).toFixed(1)}%`);
+                };
+
+                recognition.onerror = (event) => {
+                    log(`❌ Recognition error: ${event.error}`, 'error');
+                    setStatus(3, 'error');
+
+                    let errorMsg = event.error;
+                    if (event.error === 'not-allowed') {
+                        errorMsg = 'Microphone permission denied! Click the 🔒 icon in address bar and allow microphone.';
+                    } else if (event.error === 'no-speech') {
+                        errorMsg = 'No speech detected. Try again and speak clearly.';
+                    }
+
+                    showResult(3, `❌ Error: ${errorMsg}`);
+                };
+
+                recognition.onend = () => {
+                    log('🔇 Recognition ended', 'info');
+                };
+
+                recognition.start();
+                log('Speech recognition started', 'success');
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+                setStatus(3, 'error');
+                showResult(3, `❌ Exception: ${e.message}`);
+            }
+        }
+
+        async function checkMicPermission() {
+            log('Checking microphone permission...', 'info');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                log('✅ Microphone permission granted', 'success');
+                setStatus(3, 'success');
+                showResult(3, '✅ Microphone access is allowed!');
+                stream.getTracks().forEach(track => track.stop());
+            } catch (e) {
+                log(`❌ Microphone permission error: ${e.message}`, 'error');
+                setStatus(3, 'error');
+                showResult(3, `❌ Microphone denied. Click 🔒 in address bar and allow microphone access.`);
+            }
+        }
+
+        // Test 4: Voice Assistant Script
+        function checkVoiceAssistant() {
+            log('Checking voice assistant script...', 'info');
+
+            if (typeof window.voiceAssistant !== 'undefined') {
+                log('✅ Voice assistant object found', 'success');
+                setStatus(4, 'success');
+                showResult(4, '✅ Voice assistant script is loaded!<br>Type: ' + typeof window.voiceAssistant);
+            } else {
+                log('❌ Voice assistant object not found', 'error');
+                setStatus(4, 'error');
+                showResult(4, '❌ Voice assistant script not loaded. Check if voice-assistant.js is included in the page.');
+            }
+        }
+
+        function testVoiceAssistantInit() {
+            log('Testing voice assistant initialization...', 'info');
+
+            if (typeof window.voiceAssistant === 'undefined') {
+                log('❌ Voice assistant not loaded', 'error');
+                setStatus(4, 'error');
+                showResult(4, '❌ Load voice assistant first');
+                return;
+            }
+
+            try {
+                const va = window.voiceAssistant;
+                const info = {
+                    'Language': va.currentLanguage || 'Unknown',
+                    'Enabled': va.isEnabled ? 'Yes' : 'No',
+                    'Active': va.conversationActive ? 'Yes' : 'No',
+                    'Recognition': va.recognition ? 'Initialized' : 'Not initialized'
+                };
+
+                const infoHtml = Object.entries(info).map(([k, v]) => `${k}: ${v}`).join('<br>');
+                showResult(4, `✅ Voice Assistant Info:<br>${infoHtml}`);
+                setStatus(4, 'success');
+                log('Voice assistant initialized successfully', 'success');
+            } catch (e) {
+                log(`❌ Initialization error: ${e.message}`, 'error');
+                setStatus(4, 'error');
+                showResult(4, `❌ Error: ${e.message}`);
+            }
+        }
+
+        // Test 5: Backend
+        async function testBackend() {
+            log('Testing backend connection...', 'info');
+
+            try {
+                const response = await fetch('/metrics');
+                const data = await response.json();
+                log('✅ Backend connected', 'success');
+                setStatus(5, 'success');
+                showResult(5, `✅ Backend is running!<br>NLP Accuracy: ${data.nlp_accuracy}%`);
+            } catch (e) {
+                log(`❌ Backend error: ${e.message}`, 'error');
+                setStatus(5, 'error');
+                showResult(5, `❌ Cannot connect to backend. Is the server running?`);
+            }
+        }
+
+        async function testGeminiAI() {
+            log('Testing Gemini AI endpoint...', 'info');
+
+            try {
+                const response = await fetch('/voice-ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'test',
+                        context: 'greeting',
+                        language: 'en-IN'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.source === 'gemini') {
+                    log('✅ Gemini AI is working!', 'success');
+                    setStatus(5, 'success');
+                    showResult(5, `✅ Gemini AI Response:<br>"${data.response.substring(0, 100)}..."`);
+                } else if (data.source === 'fallback') {
+                    log('⚠️ Using fallback responses (Gemini not configured)', 'warning');
+                    setStatus(5, 'warning');
+                    showResult(5, `⚠️ Gemini AI not configured. Using fallback responses.`);
+                } else {
+                    log('❌ Unexpected response', 'error');
+                    setStatus(5, 'error');
+                    showResult(5, `❌ Unexpected response: ${JSON.stringify(data)}`);
+                }
+            } catch (e) {
+                log(`❌ Gemini AI error: ${e.message}`, 'error');
+                setStatus(5, 'error');
+                showResult(5, `❌ Error: ${e.message}`);
+            }
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            clearLog();
+            log('🚀 Running all diagnostic tests...', 'info');
+
+            checkBrowserSupport();
+            await new Promise(r => setTimeout(r, 500));
+
+            listVoices();
+            await new Promise(r => setTimeout(r, 500));
+
+            checkMicPermission();
+            await new Promise(r => setTimeout(r, 500));
+
+            checkVoiceAssistant();
+            await new Promise(r => setTimeout(r, 500));
+
+            testBackend();
+            await new Promise(r => setTimeout(r, 500));
+
+            testGeminiAI();
+
+            log('✅ All tests completed!', 'success');
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            log('Diagnostic page loaded', 'info');
+            log('Click "Run All Tests" or test individual components', 'info');
+        });
+    </script>
+</body>
+
+</html>

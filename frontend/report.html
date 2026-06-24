@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description"
+        content="Report civic issues instantly with SmartCivic's AI-powered platform. Comprehensive reporting with voice assistance, smart location detection, and real-time tracking.">
+    <title>Report Issue — SmartCivic AI Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .form-section {
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .form-section:last-child {
+            border-bottom: none;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-label .required {
+            color: var(--danger);
+            font-size: 1.2rem;
+        }
+
+        .form-help {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        select.category-select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 48px;
+        }
+
+        .severity-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .severity-option {
+            position: relative;
+        }
+
+        .severity-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .severity-option label {
+            display: block;
+            padding: 16px;
+            text-align: center;
+            border: 2px solid var(--glass-border);
+            border-radius: 12px;
+            background: var(--glass);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 700;
+        }
+
+        .severity-option input[type="radio"]:checked+label {
+            border-color: var(--accent-1);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .severity-option label:hover {
+            border-color: var(--accent-1);
+            transform: translateY(-2px);
+        }
+
+        .severity-low {
+            color: var(--success);
+        }
+
+        .severity-medium {
+            color: var(--warning);
+        }
+
+        .severity-high {
+            color: var(--danger);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--glass-border);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            background: var(--glass);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-1);
+            background: var(--glass-hover);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent-1);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        .submit-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .severity-options {
+                grid-template-columns: 1fr;
+            }
+
+            .submit-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Animated Particles Background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Header -->
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="brand" href="index.html">✨ SmartCivic</a>
+            <nav class="nav">
+                <a href="index.html">Home</a>
+                <a href="report.html">Report</a>
+                <a href="track.html">Track</a>
+                <a href="about.html">About</a>
+                <a href="admin.html">Admin</a>
+                <select id="languageSelector" onchange="changeLanguage(this.value)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 5px 10px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; outline: none; margin-right: 15px;">
+                    <option value="en" style="color: black;">English</option>
+                    <option value="hi" style="color: black;">हिन्दी</option>
+                    <option value="te" style="color: black;">తెలుగు</option>
+                    <option value="ta" style="color: black;">தமிழ்</option>
+                    <option value="kn" style="color: black;">ಕನ್ನಡ</option>
+                </select>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <span style="font-size: 20px;">🌓</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding: 60px 0 100px;">
+        <!-- Page Header -->
+        <div style="text-align: center; margin-bottom: 60px; animation: fadeInUp 0.6s ease;">
+            <h1
+                style="font-size: 3.5rem; font-weight: 900; margin-bottom: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                � Report Civic Issue
+            </h1>
+            <p class="muted" style="font-size: 1.3rem; max-width: 700px; margin: 0 auto;">
+                Provide detailed information for faster resolution. All fields help us route your complaint accurately.
+            </p>
+        </div>
+
+        <!-- Main Report Form -->
+        <div class="card" style="max-width: 1000px; margin: 0 auto; animation: fadeInUp 0.8s ease;">
+
+            <!-- Personal Information Section -->
+            <div class="form-section">
+                <h2
+                    style="font-size: 1.8rem; font-weight: 900; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+                    <span>👤</span> Contact Information
+                </h2>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span>📱</span> Phone Number <span class="required">*</span>
+                        </label>
+                        <input type="tel" id="phoneNumber" placeholder="Enter 10-digit mobile number"
+                            pattern="[0-9]{10}" required>
+                        <div class="form-help">We'll send updates via SMS</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span>📧</span> Email Address (Optional)
+                        </label>
+                        <input type="email" id="emailAddress" placeholder="your.email@example.com">
+                        <div class="form-help">For detailed updates and receipts</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span>👨‍💼</span> Full Name (Optional)
+                    </label>
+                    <input type="text" id="fullName" placeholder="Enter your full name">
+                    <div class="form-help">Helps us personalize communication</div>
+                </div>
+            </div>
+
+            <!-- Issue Category Section -->
+            <div class="form-section">
+                <h2
+                    style="font-size: 1.8rem; font-weight: 900; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+                    <span>🏷️</span> Issue Category
+                </h2>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span>📂</span> Type of Issue <span class="required">*</span>
+                    </label>
+                    <select id="issueCategory" class="category-select" required>
+                        <option value="">-- Select Issue Category --</option>
+                        <option value="Road">🛣️ Road Issues (Potholes, Damage, Debris)</option>
+                        <option value="Water">💧 Water Supply (Leaks, Low Pressure, Quality)</option>
+                        <option value="Electricity">⚡ Electricity (Power Outage, Sparking Wires)</option>
+                        <option value="Street Light">💡 Street Lights (Broken, Flickering, Dark Areas)</option>
+                        <option value="Sanitation">🗑️ Sanitation (Garbage, Waste Management)</option>
+                        <option value="Drainage">🚰 Drainage (Blockage, Overflow, Sewage)</option>
+                        <option value="Other">📋 Other Civic Issue</option>
+                    </select>
+                    <div class="form-help">Select the category that best describes your issue</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span>⚠️</span> Severity Level <span class="required">*</span>
+                    </label>
+                    <div class="severity-options">
+                        <div class="severity-option">
+                            <input type="radio" id="severityLow" name="severity" value="LOW" required>
+                            <label for="severityLow" class="severity-low">
+                                <div style="font-size: 2rem; margin-bottom: 8px;">🟢</div>
+                                <div>Low</div>
+                                <div style="font-size: 0.75rem; font-weight: 500; margin-top: 4px; opacity: 0.8;">Minor
+                                    inconvenience</div>
+                            </label>
+                        </div>
+                        <div class="severity-option">
+                            <input type="radio" id="severityMedium" name="severity" value="MEDIUM" checked>
+                            <label for="severityMedium" class="severity-medium">
+                                <div style="font-size: 2rem; margin-bottom: 8px;">🟡</div>
+                                <div>Medium</div>
+                                <div style="font-size: 0.75rem; font-weight: 500; margin-top: 4px; opacity: 0.8;">Needs
+                                    attention</div>
+                            </label>
+                        </div>
+                        <div class="severity-option">
+                            <input type="radio" id="severityHigh" name="severity" value="HIGH">
+                            <label for="severityHigh" class="severity-high">
+                                <div style="font-size: 2rem; margin-bottom: 8px;">🔴</div>
+                                <div>High</div>
+                                <div style="font-size: 0.75rem; font-weight: 500; margin-top: 4px; opacity: 0.8;">
+                                    Urgent/Critical</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-help">How urgent is this issue?</div>
+                </div>
+            </div>
+
+            <!-- Location Section -->
+            <div class="form-section">
+                <h2
+                    style="font-size: 1.8rem; font-weight: 900; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+                    <span>📍</span> Location Details
+                </h2>
+
+                <!-- Location Status Badge -->
+                <div id="locationStatus" style="text-align: center; margin-bottom: 24px;">
+                    <div id="currentWardInfo"
+                        style="display: none; padding: 12px 24px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15)); border: 2px solid var(--accent-1); border-radius: 999px; color: var(--text); font-weight: 700; font-size: 1rem; display: inline-flex; align-items: center; gap: 10px; animation: badgePulse 2s ease infinite;">
+                        <span style="font-size: 1.2rem;">🔍</span>
+                        <span>Detecting your Location...</span>
+                    </div>
+                </div>
+
+                <!-- Quick Location Button -->
+                <div style="margin-bottom: 20px; text-align: center;">
+                    <button class="btn primary" onclick="autoTrackCurrentLocation()"
+                        style="display: inline-flex; align-items: center; gap: 12px; padding: 16px 32px; font-size: 1.1rem; border-radius: 50px; box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);">
+                        <span style="font-size: 1.5rem;">📍</span>
+                        <div style="text-align: left;">
+                            <div style="font-weight: 800;">Use My Current Location</div>
+                            <div style="font-size: 0.85rem; opacity: 0.9; font-weight: 500;">Auto-detect GPS position
+                            </div>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Interactive Map -->
+                <div style="margin-bottom: 20px;">
+                    <div id="map"
+                        style="height: 400px; margin-bottom: 16px; box-shadow: var(--shadow-lg); border-radius: 20px;">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span>🔍</span> Search or Enter Location
+                    </label>
+                    <div style="display: flex; gap: 12px;">
+                        <input type="text" id="mapSearchInput" placeholder="Search village/ward (e.g. Reddygudem)"
+                            onkeydown="if(event.key==='Enter') searchLocation()" style="flex: 1;">
+                        <button class="btn secondary" onclick="searchLocation()">
+                            <span>🔍</span> Search
+                        </button>
+                    </div>
+                    <div class="form-help">Click on map or search for specific location</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span>🏘️</span> Ward/Area Name
+                        </label>
+                        <input type="text" id="wardName" placeholder="Auto-detected from location">
+                        <div class="form-help">Will be auto-filled based on map selection</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span>📫</span> Nearest Landmark
+                        </label>
+                        <input type="text" id="landmark" placeholder="e.g., Near City Hospital">
+                        <div class="form-help">Helps authorities locate the issue faster</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span>🏠</span> Detailed Address (Optional)
+                    </label>
+                    <textarea id="detailedAddress" rows="2"
+                        placeholder="Street name, building number, or any specific location details..."></textarea>
+                </div>
+            </div>
+
+            <!-- Issue Description Section -->
+            <div class="form-section">
+                <h2
+                    style="font-size: 1.8rem; font-weight: 900; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+                    <span>📄</span> Issue Description
+                </h2>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span>✍️</span> Detailed Description <span class="required">*</span>
+                    </label>
+                    <textarea id="complaint" rows="6"
+                        placeholder="Please describe the issue in detail. Include:
+• What is the problem?
+• When did you first notice it?
+• How is it affecting the community?
+• Any safety concerns?
+
+Example: There's a large pothole on Main Street near the park entrance. It appeared after last week's heavy rain and is causing traffic issues. Several vehicles have been damaged, and it poses a safety risk especially at night."
+                        required style="resize: vertical; min-height: 150px;"></textarea>
+                    <div class="form-help">Be as specific as possible - more details help faster resolution</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span>📸</span> Upload Photos (Optional)
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        <!-- Direct Camera Capture -->
+                        <div class="upload-area" onclick="openCamera()" id="cameraArea" style="border-color: #4ade80;">
+                            <div style="font-size: 3rem; margin-bottom: 12px;">📷</div>
+                            <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 8px; color: #4ade80;">Take
+                                Photo</div>
+                            <div class="muted" style="font-size: 0.85rem;">Open camera directly</div>
+                        </div>
+                        <!-- File Upload -->
+                        <div class="upload-area" onclick="document.getElementById('photoUpload').click()"
+                            id="uploadArea">
+                            <div style="font-size: 3rem; margin-bottom: 12px;">📁</div>
+                            <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 8px;">Upload from Gallery
+                            </div>
+                            <div class="muted" style="font-size: 0.85rem;">Choose existing photos</div>
+                        </div>
+                    </div>
+                    <input type="file" id="photoUpload" accept="image/*" multiple style="display: none;">
+                    <div id="uploadedFiles" style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 12px;"></div>
+                    <div class="form-help">Photos help authorities understand the issue better</div>
+                </div>
+
+                <!-- Camera Modal -->
+                <div id="cameraModal"
+                    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; flex-direction: column; align-items: center; justify-content: center;">
+                    <video id="cameraVideo" autoplay playsinline
+                        style="max-width: 100%; max-height: 70vh; border-radius: 16px;"></video>
+                    <div style="margin-top: 20px; display: flex; gap: 16px;">
+                        <button onclick="capturePhoto()"
+                            style="padding: 16px 40px; background: #4ade80; border: none; border-radius: 50px; color: white; font-size: 1.2rem; font-weight: 700; cursor: pointer;">📷
+                            Capture</button>
+                        <button onclick="closeCamera()"
+                            style="padding: 16px 40px; background: #ef4444; border: none; border-radius: 50px; color: white; font-size: 1.2rem; font-weight: 700; cursor: pointer;">✕
+                            Cancel</button>
+                    </div>
+                    <canvas id="cameraCanvas" style="display: none;"></canvas>
+                </div>
+            </div>
+
+            <!-- Submission Actions -->
+            <div class="submit-actions">
+                <button class="btn secondary" onclick="voiceAssistant.toggleSession()" style="padding: 20px;">
+                    <span style="font-size: 1.5rem;">🎙️</span>
+                    <div style="text-align: left; flex: 1;">
+                        <div style="font-weight: 800;">Voice Assistant</div>
+                        <div style="font-size: 0.85rem; opacity: 0.8; font-weight: 500;">Fill form using AI voice</div>
+                    </div>
+                </button>
+                <button class="btn primary" onclick="submitDetailedComplaint()" style="padding: 20px;">
+                    <span style="font-size: 1.5rem;">🚀</span>
+                    <div style="text-align: left; flex: 1;">
+                        <div style="font-weight: 800;">Submit Report</div>
+                        <div style="font-size: 0.85rem; opacity: 0.9; font-weight: 500;">Send to authorities</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Result Display -->
+            <div id="result" class="card"
+                style="display: none; margin-top: 32px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border: 2px solid var(--accent-1);">
+            </div>
+        </div>
+
+        <!-- Why Details Matter -->
+        <div class="card"
+            style="max-width: 1000px; margin: 60px auto 0; background: linear-gradient(135deg, rgba(67, 233, 123, 0.1), rgba(56, 249, 215, 0.1)); border: 2px solid var(--success);">
+            <h3
+                style="font-weight: 900; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-size: 1.5rem;">
+                <span>💡</span> Why Detailed Information Matters
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+                <div>
+                    <div style="font-size: 2rem; margin-bottom: 12px;">🎯</div>
+                    <h4 style="font-weight: 800; margin-bottom: 8px;">Accurate Routing</h4>
+                    <p class="muted" style="font-size: 0.95rem;">Complete information helps our AI route your complaint
+                        to the exact right department</p>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; margin-bottom: 12px;">⚡</div>
+                    <h4 style="font-weight: 800; margin-bottom: 8px;">Faster Resolution</h4>
+                    <p class="muted" style="font-size: 0.95rem;">Detailed descriptions eliminate back-and-forth,
+                        speeding up the resolution process</p>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; margin-bottom: 12px;">📊</div>
+                    <h4 style="font-weight: 800; margin-bottom: 8px;">Better Tracking</h4>
+                    <p class="muted" style="font-size: 0.95rem;">Your contact information ensures you receive real-time
+                        updates on progress</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container">
+            <p class="muted" style="font-size: 1rem;">
+                © 2026 SmartCivic — Powered by AI, Built for Citizens
+            </p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+    
+
+    <script>
+        // Enhanced submission function
+        function submitDetailedComplaint() {
+            // Validate required fields
+            const phone = document.getElementById('phoneNumber').value.trim();
+            const category = document.getElementById('issueCategory').value;
+            const severity = document.querySelector('input[name="severity"]:checked')?.value;
+            const description = document.getElementById('complaint').value.trim();
+
+            if (!phone) {
+                showToast('Please enter your phone number', 'error');
+                return;
+            }
+
+            if (phone.length !== 10 || !/^\d+$/.test(phone)) {
+                showToast('Please enter a valid 10-digit phone number', 'error');
+                return;
+            }
+
+            if (!category) {
+                showToast('Please select an issue category', 'error');
+                return;
+            }
+
+            if (!severity) {
+                showToast('Please select severity level', 'error');
+                return;
+            }
+
+            if (!description) {
+                showToast('Please provide a detailed description', 'error');
+                return;
+            }
+
+            // Collect all form data
+            const formData = {
+                phone: phone,
+                email: document.getElementById('emailAddress').value.trim(),
+                name: document.getElementById('fullName').value.trim(),
+                category: category,
+                severity: severity,
+                ward: document.getElementById('wardName').value.trim(),
+                landmark: document.getElementById('landmark').value.trim(),
+                address: document.getElementById('detailedAddress').value.trim(),
+                complaint: description,
+                // Location data from map
+                latitude: window.selectedLatitude || null,
+                longitude: window.selectedLongitude || null
+            };
+
+            // Call the original submit function with enhanced data
+            submitToGovernment(formData);
+        }
+
+        // Camera handling with getUserMedia
+        let cameraStream = null;
+
+        async function openCamera() {
+            const modal = document.getElementById('cameraModal');
+            const video = document.getElementById('cameraVideo');
+
+            try {
+                // Request camera access
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                video.srcObject = cameraStream;
+                modal.style.display = 'flex';
+                showToast('📷 Camera opened! Click Capture to take photo.', 'info');
+            } catch (err) {
+                console.error('Camera error:', err);
+                if (err.name === 'NotAllowedError') {
+                    showToast('❌ Camera access denied. Please allow camera in browser settings.', 'error');
+                } else if (err.name === 'NotFoundError') {
+                    showToast('❌ No camera found on this device.', 'error');
+                } else {
+                    showToast('❌ Could not access camera: ' + err.message, 'error');
+                }
+            }
+        }
+
+        function closeCamera() {
+            const modal = document.getElementById('cameraModal');
+            const video = document.getElementById('cameraVideo');
+
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            video.srcObject = null;
+            modal.style.display = 'none';
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('cameraCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size to video size
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw current frame to canvas
+            ctx.drawImage(video, 0, 0);
+
+            // Convert to blob and add to files
+            canvas.toBlob((blob) => {
+                const file = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                allFiles.push(file);
+                renderPreviews();
+                showToast('📷 Photo captured!', 'success');
+                closeCamera();
+            }, 'image/jpeg', 0.9);
+        }
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const photoUpload = document.getElementById('photoUpload');
+        const uploadedFiles = document.getElementById('uploadedFiles');
+
+        // Store all captured/uploaded files
+        let allFiles = [];
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            addFiles(e.dataTransfer.files);
+        });
+
+        // Gallery upload
+        photoUpload.addEventListener('change', (e) => {
+            addFiles(e.target.files);
+        });
+
+        // Camera capture
+        cameraCapture.addEventListener('change', (e) => {
+            addFiles(e.target.files);
+            showToast('📷 Photo captured!', 'success');
+        });
+
+        function addFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024) {
+                    allFiles.push(file);
+                } else if (file.size > 5 * 1024 * 1024) {
+                    showToast('File too large (max 5MB)', 'error');
+                }
+            });
+            renderPreviews();
+        }
+
+        function renderPreviews() {
+            uploadedFiles.innerHTML = '';
+            allFiles.forEach((file, index) => {
+                const preview = document.createElement('div');
+                preview.style.cssText = 'position: relative; width: 100px; height: 100px; border-radius: 12px; overflow: hidden; border: 2px solid var(--glass-border);';
+
+                const img = document.createElement('img');
+                img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+                const reader = new FileReader();
+                reader.onload = (e) => { img.src = e.target.result; };
+                reader.readAsDataURL(file);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.innerHTML = '×';
+                removeBtn.style.cssText = 'position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background: #ef4444; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1;';
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    allFiles.splice(index, 1);
+                    renderPreviews();
+                };
+
+                preview.appendChild(img);
+                preview.appendChild(removeBtn);
+                uploadedFiles.appendChild(preview);
+            });
+
+            if (allFiles.length > 0) {
+                const count = document.createElement('div');
+                count.style.cssText = 'width: 100%; text-align: center; color: var(--success); font-weight: 600; padding: 8px;';
+                count.textContent = `✓ ${allFiles.length} photo(s) ready`;
+                uploadedFiles.appendChild(count);
+            }
+        }
+
+        // Store files for form submission
+        window.getUploadedFiles = () => allFiles;
+
+        // Create animated particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 40;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+
+                const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe'];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        createParticles();
+    </script>
+</body>
+
+</html>

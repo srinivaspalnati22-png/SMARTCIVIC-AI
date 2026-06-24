@@ -1,0 +1,13 @@
+flask
+pandas
+scikit-learn
+langdetect
+googletrans
+geopy
+opencv-python
+python-dotenv
+twilio
+flask-cors
+requests
+google-generativeai
+google-genai

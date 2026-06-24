@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description"
+        content="SmartCivic - Revolutionary AI-powered civic engagement platform. Report issues, track complaints, and build smarter cities together.">
+    <title>SmartCivic — Revolutionary AI-Powered Civic Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Language Selector Styling */
+        #languageSelector option {
+            color: #111;
+            background: #fff;
+        }
+
+        /* Hero with Background Image */
+        .hero-section {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .hero-bg img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hero-bg::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(10, 14, 26, 0.9) 0%, rgba(10, 14, 26, 0.7) 50%, rgba(10, 14, 26, 0.85) 100%);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 120px 0;
+            width: 100%;
+        }
+
+        /* Image Cards */
+        .image-card {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+            transition: all 0.4s ease;
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .image-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .image-card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+        }
+
+        /* Stats Section */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 32px;
+            padding: 60px 0;
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+            margin: 60px 0;
+        }
+
+        @media (max-width: 768px) {
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 24px;
+            }
+        }
+
+        /* Testimonials */
+        .testimonial-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 32px;
+            position: relative;
+        }
+
+        .testimonial-card::before {
+            content: '"';
+            position: absolute;
+            top: 16px;
+            left: 24px;
+            font-size: 5rem;
+            color: var(--accent-1);
+            opacity: 0.3;
+            font-family: Georgia, serif;
+            line-height: 1;
+        }
+
+        /* Process Steps */
+        .process-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 24px;
+            padding: 24px;
+            background: var(--glass);
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+
+        .process-step:hover {
+            border-color: var(--accent-1);
+            transform: translateX(8px);
+        }
+
+        .process-number {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.3rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        /* Startup Auth & Language Modal */
+        .startup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 14, 26, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 999990;
+            /* Right below splash screen */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s ease;
+        }
+
+        .startup-overlay::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(102, 126, 234, 0.15) 0%, rgba(10, 14, 26, 0) 70%);
+            pointer-events: none;
+        }
+
+        .startup-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .startup-card {
+            background: rgba(20, 25, 40, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            width: 90%;
+            max-width: 480px;
+            padding: 48px;
+            text-align: center;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 40px rgba(102, 126, 234, 0.2);
+            position: relative;
+            overflow: hidden;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .startup-overlay.active .startup-card {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .startup-step {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+        }
+
+        .startup-step.hidden {
+            display: none;
+            opacity: 0;
+        }
+
+        .startup-card h2 {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, white, var(--muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .startup-card p {
+            color: var(--muted);
+            margin-bottom: 30px;
+        }
+
+        .startup-input {
+            width: 100%;
+            padding: 18px 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 28px;
+            text-align: center;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .startup-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.2);
+        }
+
+        .startup-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 1.1rem;
+            letter-spacing: 0;
+        }
+
+        .lang-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .lang-btn {
+            padding: 18px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .lang-btn:hover {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.2), rgba(0, 242, 254, 0.2));
+            border-color: #4facfe;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(79, 172, 254, 0.3);
+        }
+
+        /* Splash Intro Animation */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #141e30 0%, #243b55 100%);
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1.2s cubic-bezier(0.77, 0, 0.175, 1), transform 1.2s cubic-bezier(0.77, 0, 0.175, 1), visibility 1.2s;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(1.1);
+            pointer-events: none;
+        }
+
+        .splash-ring {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .splash-ring::before,
+        .splash-ring::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        .splash-ring::before {
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
+            border-left-color: #4facfe;
+            border-right-color: #f093fb;
+            animation: spinThis 2s linear infinite;
+        }
+
+        .splash-ring::after {
+            width: 75%;
+            height: 75%;
+            border: 4px solid transparent;
+            border-top-color: #00f2fe;
+            border-bottom-color: #4facfe;
+            animation: spinThisReverse 1.5s linear infinite;
+        }
+
+        .splash-icon {
+            font-size: 3.5rem;
+            animation: pulseIcon 2.5s ease-in-out infinite;
+        }
+
+        .splash-text {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .splash-text h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            letter-spacing: 3px;
+            animation: slideUpFade 1s both 0.2s;
+        }
+
+        .splash-text p {
+            color: #8892b0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            animation: slideUpFade 1s both 0.6s;
+        }
+
+        @keyframes spinThis {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spinThisReverse {
+            0% {
+                transform: rotate(360deg);
+            }
+
+            100% {
+                transform: rotate(-360deg);
+            }
+        }
+
+        @keyframes pulseIcon {
+
+            0%,
+            100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 10px rgba(79, 172, 254, 0.5));
+            }
+
+            50% {
+                transform: scale(1.1);
+                filter: drop-shadow(0 0 25px rgba(240, 147, 251, 0.8));
+            }
+        }
+
+        @keyframes slideUpFade {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Intro Splash Animation -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-ring">
+            <span class="splash-icon">✨</span>
+        </div>
+        <div class="splash-text">
+            <h1>SmartCivic AI</h1>
+            <p>Initializing Platform</p>
+        </div>
+    </div>
+
+    <!-- Mandatory Startup Login & Language Flow -->
+    <div id="startupOverlay" class="startup-overlay">
+        <div class="startup-card">
+
+            <!-- Step 1: Login -->
+            <div id="startupLoginStep" class="startup-step">
+                <div style="font-size: 3rem; margin-bottom: 16px;">👋</div>
+                <h2>Welcome to SmartCivic</h2>
+                <p>Please enter your mobile number or email to continue.</p>
+                <input type="text" id="startupAuthInput" class="startup-input" placeholder="e.g. 9876543210 or email">
+                <button class="btn primary" style="width: 100%; padding: 16px; font-size: 1.1rem;"
+                    onclick="processLogin()">
+                    Continue <span>➔</span>
+                </button>
+            </div>
+
+            <!-- Step 2: Language Selection -->
+            <div id="startupLangStep" class="startup-step hidden">
+                <div
+                    style="font-size: 3.5rem; margin-bottom: 16px; display: inline-block; animation: pulseIcon 2s infinite;">
+                    🌐</div>
+                <h2 style="font-size: 2.2rem; margin-bottom: 8px;">Select Language</h2>
+                <p style="font-size: 1.1rem;">Choose your preferred interface language to continue.</p>
+                <div class="lang-grid">
+                    <button class="lang-btn" onclick="completeStartup('en', 'en-IN')">
+                        <span style="font-size: 1.5rem;">🇬🇧</span> English
+                    </button>
+                    <button class="lang-btn" onclick="completeStartup('hi', 'hi-IN')">
+                        <span style="font-size: 1.5rem;">🇮🇳</span> हिन्दी
+                    </button>
+                    <button class="lang-btn" onclick="completeStartup('te', 'te-IN')">
+                        <span style="font-size: 1.5rem;">🇮🇳</span> తెలుగు
+                    </button>
+                    <button class="lang-btn" onclick="completeStartup('ta', 'ta-IN')">
+                        <span style="font-size: 1.5rem;">🇮🇳</span> தமிழ்
+                    </button>
+                    <button class="lang-btn" onclick="completeStartup('kn', 'kn-IN')">
+                        <span style="font-size: 1.5rem;">🇮🇳</span> ಕನ್ನಡ
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+
+    <!-- Animated Particles Background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Header -->
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="brand" href="index.html">✨ SmartCivic</a>
+            <nav class="nav">
+                <a href="index.html">Home</a>
+                <a href="report.html">Report</a>
+                <a href="track.html">Track</a>
+                <a href="about.html">About</a>
+                <a href="admin.html">Admin</a>
+                
+                <select id="languageSelector" onchange="changeLanguage(this.value)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 5px 10px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; outline: none;">
+                    <option value="en" style="color: black;">English</option>
+                    <option value="hi" style="color: black;">हिन्दी</option>
+                    <option value="te" style="color: black;">తెలుగు</option>
+                    <option value="ta" style="color: black;">தமிழ்</option>
+                    <option value="kn" style="color: black;">ಕನ್ನಡ</option>
+                </select>
+
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <span style="font-size: 20px;">🌓</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section with Background Image -->
+    <section class="hero-section">
+        <div class="hero-bg">
+            <img src="hero-bg.jpg" alt="Smart City AI">
+        </div>
+        <div class="container hero-content">
+            <div style="animation: fadeInUp 0.8s ease;">
+                <div
+                    style="display: inline-block; padding: 12px 24px; background: rgba(102, 126, 234, 0.2); border: 1px solid var(--accent-1); border-radius: 999px; font-weight: 700; font-size: 0.9rem; margin-bottom: 24px;">
+                    🚀 AI-Powered • Real-Time • Citizen-First
+                </div>
+                <h1
+                    style="font-size: 4.5rem; font-weight: 900; margin-bottom: 24px; background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.1;">
+                    Smart Governance,<br>Better Living.
+                </h1>
+                <p
+                    style="color: var(--muted); font-size: 1.4rem; margin-bottom: 48px; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.8;">
+                    Transform your city with AI-powered civic engagement. Report issues instantly, track progress in
+                    real-time, and be part of building a smarter future.
+                </p>
+                <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                    <a href="report.html" class="btn primary" style="padding: 18px 40px; font-size: 1.1rem;">
+                        <span>🚀</span> Report an Issue
+                    </a>
+                    <a href="track.html" class="btn secondary" style="padding: 18px 40px; font-size: 1.1rem;">
+                        <span>📊</span> Track Complaints
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main class="container">
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div style="text-align: center;">
+                <div class="text-gradient" style="font-size: 3.5rem; font-weight: 900;">5000+</div>
+                <div class="muted" style="font-size: 1rem; font-weight: 600; margin-top: 8px;">Issues Resolved</div>
+            </div>
+            <div style="text-align: center;">
+                <div class="text-gradient" style="font-size: 3.5rem; font-weight: 900;">98%</div>
+                <div class="muted" style="font-size: 1rem; font-weight: 600; margin-top: 8px;">Success Rate</div>
+            </div>
+            <div style="text-align: center;">
+                <div class="text-gradient" style="font-size: 3.5rem; font-weight: 900;">&lt;24h</div>
+                <div class="muted" style="font-size: 1rem; font-weight: 600; margin-top: 8px;">Avg Response</div>
+            </div>
+            <div style="text-align: center;">
+                <div class="text-gradient" style="font-size: 3.5rem; font-weight: 900;">50+</div>
+                <div class="muted" style="font-size: 1rem; font-weight: 600; margin-top: 8px;">Wards Covered</div>
+            </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <section style="margin: 100px 0;">
+            <div style="text-align: center; margin-bottom: 60px;">
+                <h2 style="font-size: 3rem; font-weight: 900; margin-bottom: 16px;">How It Works</h2>
+                <p class="muted" style="font-size: 1.2rem; max-width: 600px; margin: 0 auto;">
+                    Three simple steps to make your city better
+                </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 32px;">
+                <div class="process-step">
+                    <div class="process-number">1</div>
+                    <div>
+                        <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 8px;">Report the Issue</h3>
+                        <p class="muted" style="line-height: 1.7;">Use our AI voice assistant or form to describe the
+                            civic issue. Upload photos for faster resolution.</p>
+                    </div>
+                </div>
+                <div class="process-step">
+                    <div class="process-number">2</div>
+                    <div>
+                        <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 8px;">AI Routes to Authority</h3>
+                        <p class="muted" style="line-height: 1.7;">Our AI categorizes the issue and routes it directly
+                            to the responsible government department.</p>
+                    </div>
+                </div>
+                <div class="process-step">
+                    <div class="process-number">3</div>
+                    <div>
+                        <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 8px;">Track & Get Updates</h3>
+                        <p class="muted" style="line-height: 1.7;">Receive real-time SMS updates as your complaint
+                            progresses from submitted to resolved.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Image Showcase Section -->
+        <section style="margin: 100px 0;">
+            <div style="text-align: center; margin-bottom: 60px;">
+                <h2 style="font-size: 3rem; font-weight: 900; margin-bottom: 16px;">Making Real Impact</h2>
+                <p class="muted" style="font-size: 1.2rem; max-width: 600px; margin: 0 auto;">
+                    See how SmartCivic is transforming communities every day
+                </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 32px;">
+                <div class="image-card">
+                    <img src="images/citizen-reporting.png" alt="Citizen Reporting Issue">
+                    <div class="image-card-overlay">
+                        <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; color: white;">Easy
+                            Reporting</h3>
+                        <p style="color: rgba(255,255,255,0.8); font-size: 0.95rem;">Citizens can report issues directly
+                            from their smartphones</p>
+                    </div>
+                </div>
+                <div class="image-card">
+                    <img src="images/workers-fixing.png" alt="City Workers Fixing Issue">
+                    <div class="image-card-overlay">
+                        <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; color: white;">Quick
+                            Resolution</h3>
+                        <p style="color: rgba(255,255,255,0.8); font-size: 0.95rem;">Government teams respond and
+                            resolve issues efficiently</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section style="margin: 100px 0;">
+            <div style="text-align: center; margin-bottom: 60px;">
+                <h2 style="font-size: 3rem; font-weight: 900; margin-bottom: 16px;">Powerful Features</h2>
+                <p class="muted" style="font-size: 1.2rem; max-width: 600px; margin: 0 auto;">
+                    Experience next-generation civic engagement with cutting-edge AI technology
+                </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px;">
+                <div class="card feature-card">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">🎙️</div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 12px;">Voice AI Assistant</h3>
+                    <p class="muted" style="line-height: 1.8;">Natural voice interactions powered by advanced AI. Just
+                        speak your complaint, and our intelligent assistant handles the rest.</p>
+                </div>
+
+                <div class="card feature-card">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">📍</div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 12px;">Smart Location</h3>
+                    <p class="muted" style="line-height: 1.8;">Automatic location detection with precision mapping. We
+                        route your complaint to the right authority instantly.</p>
+                </div>
+
+                <div class="card feature-card">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">⚡</div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 12px;">Real-Time Tracking</h3>
+                    <p class="muted" style="line-height: 1.8;">Monitor your complaint status in real-time with live
+                        updates and notifications at every step.</p>
+                </div>
+
+                <div class="card feature-card">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">📊</div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 12px;">Analytics Dashboard</h3>
+                    <p class="muted" style="line-height: 1.8;">Comprehensive insights and visualizations showing civic
+                        issues patterns and resolution metrics.</p>
+                </div>
+
+                <div class="card feature-card">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">🤖</div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 12px;">AI Prioritization</h3>
+                    <p class="muted" style="line-height: 1.8;">Machine learning algorithms automatically prioritize
+                        critical issues for faster resolution.</p>
+                </div>
+
+                <div class="card feature-card">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">📲</div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 12px;">SMS Updates</h3>
+                    <p class="muted" style="line-height: 1.8;">Get instant SMS notifications when your complaint status
+                        changes. Stay informed always.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Map Section -->
+        <section class="card" style="margin-bottom: 100px;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 20px;">
+                <div>
+                    <h2 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 8px;">📍 Live Complaint Map</h2>
+                    <p class="muted" style="font-size: 1.1rem;">Real-time visualization of civic issues in your area</p>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn secondary" onclick="loadHeatmap()">
+                        <span>🔥</span> Heatmap
+                    </button>
+                    <button class="btn secondary" onclick="loadMetrics()">
+                        <span>📊</span> Metrics
+                    </button>
+                </div>
+            </div>
+            <div id="map"></div>
+            <div id="result" style="margin-top: 32px;"></div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section style="margin: 100px 0;">
+            <div style="text-align: center; margin-bottom: 60px;">
+                <h2 style="font-size: 3rem; font-weight: 900; margin-bottom: 16px;">What Citizens Say</h2>
+                <p class="muted" style="font-size: 1.2rem; max-width: 600px; margin: 0 auto;">
+                    Real stories from people making a difference in their communities
+                </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 32px;">
+                <div class="testimonial-card">
+                    <p
+                        style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 24px; padding-top: 24px; position: relative; z-index: 1;">
+                        "The pothole outside my house was fixed within 3 days of reporting. Amazing how technology is
+                        making governments more responsive!"
+                    </p>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div
+                            style="width: 50px; height: 50px; background: var(--gradient-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                            👨</div>
+                        <div>
+                            <div style="font-weight: 700;">Ramesh Kumar</div>
+                            <div class="muted" style="font-size: 0.9rem;">Ward 12 Resident</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <p
+                        style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 24px; padding-top: 24px; position: relative; z-index: 1;">
+                        "The voice assistant made it so easy to report the broken street light. I didn't even need to
+                        type anything. Truly innovative!"
+                    </p>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div
+                            style="width: 50px; height: 50px; background: var(--gradient-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                            👩</div>
+                        <div>
+                            <div style="font-weight: 700;">Priya Sharma</div>
+                            <div class="muted" style="font-size: 0.9rem;">Daily Commuter</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="card"
+            style="text-align: center; padding: 80px 40px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15)); border: 2px solid var(--accent-1); margin-bottom: 60px;">
+            <h2 style="font-size: 3rem; font-weight: 900; margin-bottom: 24px; line-height: 1.2;">
+                Ready to Make<br />Your City Smarter?
+            </h2>
+            <p class="muted"
+                style="font-size: 1.3rem; margin-bottom: 40px; max-width: 700px; margin-left: auto; margin-right: auto;">
+                Join thousands of citizens making a real difference in their communities
+            </p>
+            <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                <a href="report.html" class="btn primary" style="font-size: 1.2rem; padding: 20px 48px;">
+                    <span>🚀</span> Get Started Now
+                </a>
+                <button class="btn secondary" onclick="voiceAssistant.toggleConversation()"
+                    style="font-size: 1.2rem; padding: 20px 48px;">
+                    <span>🎙️</span> Try Voice Demo
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; text-align: left; margin-bottom: 40px;">
+                <div>
+                    <h4 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 16px;">SmartCivic</h4>
+                    <p class="muted" style="line-height: 1.7;">AI-powered civic engagement platform making cities
+                        smarter, one report at a time.</p>
+                </div>
+                <div>
+                    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 16px; text-transform: uppercase;">Quick
+                        Links</h4>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <a href="report.html" style="color: var(--muted); text-decoration: none;">Report Issue</a>
+                        <a href="track.html" style="color: var(--muted); text-decoration: none;">Track Complaints</a>
+                        <a href="admin.html" style="color: var(--muted); text-decoration: none;">Admin Dashboard</a>
+                        <a href="about.html" style="color: var(--muted); text-decoration: none;">About Us</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 16px; text-transform: uppercase;">
+                        Categories</h4>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <span style="color: var(--muted);">🛣️ Road Issues</span>
+                        <span style="color: var(--muted);">💧 Water Supply</span>
+                        <span style="color: var(--muted);">⚡ Electricity</span>
+                        <span style="color: var(--muted);">💡 Street Lights</span>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align: center; padding-top: 32px; border-top: 1px solid var(--glass-border);">
+                <p class="muted" style="font-size: 1rem;">
+                    © 2026 SmartCivic — Powered by AI, Built for Citizens
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="script.js"></script>
+    
+
+    <script>
+        // Voice functions removed (voice assistant disabled)
+
+        // Create animated particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+
+                const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe'];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Add scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            // Splash Screen & Startup Logic
+            const splashScreen = document.getElementById('splashScreen');
+            const startupOverlay = document.getElementById('startupOverlay');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling during splash
+            window.scrollTo(0, 0); // Start at top
+
+            const isUserLoggedIn = localStorage.getItem('userSessionId');
+
+            // Remove splash after an impressive delay
+            setTimeout(() => {
+                splashScreen.classList.add('hidden');
+
+                if (!isUserLoggedIn) {
+                    // Show login flow if unauthenticated
+                    startupOverlay.classList.add('active');
+                } else {
+                    document.body.style.overflow = ''; // Restore scrolling if logged in
+                    // Apply saved language if any
+                    const savedLang = localStorage.getItem('siteLanguage');
+                    if (savedLang && savedLang !== 'en' && window.translatePage) {
+                        window.translatePage(savedLang);
+                    }
+                }
+            }, 2800);
+
+            // Create particles
+            createParticles();
+
+            // Observe all animatable elements
+            document.querySelectorAll('.card, .image-card, .process-step, .testimonial-card').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(el);
+            });
+        });
+
+        // Startup Flow Logic
+        window.processLogin = function () {
+            const input = document.getElementById('startupAuthInput').value.trim();
+            if (!input || input.length < 5) {
+                if (typeof showToast === 'function') showToast('Please enter a valid credential', 'warning');
+                return;
+            }
+            // Temporarily store identity and progress to step 2
+            localStorage.setItem('userSessionId', btoa(input + Date.now()));
+            localStorage.setItem('userContact', input);
+
+            document.getElementById('startupLoginStep').classList.add('hidden');
+            document.getElementById('startupLangStep').classList.remove('hidden');
+        };
+
+        window.completeStartup = function (translateCode, voiceAssistantCode) {
+            // Set site-wide language
+            localStorage.setItem('siteLanguage', translateCode);
+            localStorage.setItem('preferredLanguage', voiceAssistantCode);
+
+            // Hide startup modal and restore scrolling
+            document.getElementById('startupOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+
+            // Sync language selector dropdown
+            const selector = document.getElementById('languageSelector');
+            if (selector) selector.value = translateCode;
+
+            // Apply translation if non-English
+            if (translateCode !== 'en' && window.translatePage) {
+                window.translatePage(translateCode);
+            } else {
+                showToast('✅ Language set to English!', 'success');
+            }
+        };
+    </script>
+</body>
+
+</html>

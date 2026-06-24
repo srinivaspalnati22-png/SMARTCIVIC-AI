@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant - Diagnostic Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #666;
+        }
+        .test.pass {
+            border-left-color: #4CAF50;
+            background: #f1f8f4;
+        }
+        .test.fail {
+            border-left-color: #F44336;
+            background: #fdeaea;
+        }
+        .test.pending {
+            border-left-color: #FFC107;
+            background: #fffbea;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .output {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎤 Voice Assistant Diagnostic Test</h1>
+
+    <h2>1. Browser Capabilities</h2>
+    <div id="capabilities"></div>
+
+    <h2>2. Microphone Access</h2>
+    <div class="test pending">
+        <button onclick="testMicrophone()">🎙️ Test Microphone Access</button>
+        <div id="mic-output" class="output"></div>
+    </div>
+
+    <h2>3. Speech Synthesis (Text-to-Speech)</h2>
+    <div class="test pending">
+        <button onclick="testSpeech()">🔊 Test Speech Output</button>
+        <div id="speech-output" class="output"></div>
+    </div>
+
+    <h2>4. Speech Recognition (Voice Input)</h2>
+    <div class="test pending">
+        <button onclick="testRecognition()">🎧 Test Voice Recognition (say something)</button>
+        <div id="recognition-output" class="output"></div>
+    </div>
+
+    <h2>5. API Endpoint</h2>
+    <div class="test pending">
+        <button onclick="testAPI()">🔌 Test API Connection</button>
+        <div id="api-output" class="output"></div>
+    </div>
+
+    <h2>6. Full Voice Flow</h2>
+    <div class="test pending">
+        <button onclick="startFullTest()">▶️ Start Full Test</button>
+        <div id="flow-output" class="output"></div>
+    </div>
+
+    <script>
+        function log(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = {
+                'error': '❌',
+                'success': '✅',
+                'info': 'ℹ️',
+                'warning': '⚠️'
+            }[type] || 'ℹ️';
+            el.innerHTML += `<div><strong>${prefix} [${timestamp}]</strong> ${message}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function clearLog(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) el.innerHTML = '';
+        }
+
+        // Check browser capabilities
+        function checkCapabilities() {
+            const cap = document.getElementById('capabilities');
+            const checks = [
+                { name: 'Speech Recognition (Web Speech API)', value: !!(window.SpeechRecognition || window.webkitSpeechRecognition) },
+                { name: 'Speech Synthesis (Text-to-Speech)', value: !!window.speechSynthesis },
+                { name: 'Microphone API (getUserMedia)', value: !!navigator.mediaDevices?.getUserMedia },
+                { name: 'LocalStorage', value: !!window.localStorage },
+                { name: 'Fetch API', value: !!window.fetch }
+            ];
+
+            cap.innerHTML = checks.map(c => `
+                <div class="test ${c.value ? 'pass' : 'fail'}">
+                    <strong>${c.value ? '✅' : '❌'}</strong> ${c.name}
+                </div>
+            `).join('');
+        }
+
+        // Test Microphone
+        async function testMicrophone() {
+            clearLog('mic-output');
+            log('mic-output', 'Requesting microphone access...', 'info');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                log('mic-output', 'Microphone access granted!', 'success');
+                log('mic-output', `Stream: ${stream.id}`, 'success');
+                stream.getTracks().forEach(track => track.stop());
+                log('mic-output', 'Microphone test completed', 'success');
+            } catch (e) {
+                log('mic-output', `Error: ${e.message}`, 'error');
+                log('mic-output', 'Make sure you allow microphone permissions in browser settings', 'warning');
+            }
+        }
+
+        // Test Speech
+        function testSpeech() {
+            clearLog('speech-output');
+
+            if (!window.speechSynthesis) {
+                log('speech-output', 'Speech Synthesis not available', 'error');
+                return;
+            }
+
+            log('speech-output', 'Testing speech synthesis...', 'info');
+            const utterance = new SpeechSynthesisUtterance('Hello! This is a voice test. If you can hear this, speech synthesis is working.');
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+
+            utterance.onstart = () => {
+                log('speech-output', 'Speaking started', 'success');
+            };
+
+            utterance.onend = () => {
+                log('speech-output', 'Speech completed successfully', 'success');
+            };
+
+            utterance.onerror = (event) => {
+                log('speech-output', `Speech error: ${event.error}`, 'error');
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Test Recognition
+        function testRecognition() {
+            clearLog('recognition-output');
+
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) {
+                log('recognition-output', 'Speech Recognition not available', 'error');
+                return;
+            }
+
+            const recognition = new SR();
+            recognition.lang = 'en-US';
+            recognition.continuous = false;
+            recognition.interimResults = true;
+
+            log('recognition-output', 'Listening... Please say something', 'info');
+
+            recognition.onstart = () => {
+                log('recognition-output', 'Listening started', 'success');
+            };
+
+            recognition.onresult = (event) => {
+                let interim = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        log('recognition-output', `You said: "${transcript}" (Confidence: ${Math.round(event.results[i][0].confidence * 100)}%)`, 'success');
+                    } else {
+                        interim += transcript + ' ';
+                    }
+                }
+                if (interim) {
+                    log('recognition-output', `Interim: ${interim}`, 'info');
+                }
+            };
+
+            recognition.onerror = (event) => {
+                log('recognition-output', `Recognition error: ${event.error}`, 'error');
+            };
+
+            recognition.onend = () => {
+                log('recognition-output', 'Listening stopped', 'info');
+            };
+
+            recognition.start();
+        }
+
+        // Test API
+        async function testAPI() {
+            clearLog('api-output');
+            log('api-output', 'Testing /api/chat endpoint...', 'info');
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'hello',
+                        context: { page: 'test.html', form_state: {}, history: [] },
+                        language: 'en-IN'
+                    })
+                });
+
+                if (!response.ok) {
+                    log('api-output', `HTTP Error: ${response.status} ${response.statusText}`, 'error');
+                    const text = await response.text();
+                    log('api-output', `Response: ${text}`, 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                log('api-output', 'API Response received:', 'success');
+                log('api-output', `Response: ${JSON.stringify(data, null, 2)}`, 'success');
+
+                if (data.response && data.action) {
+                    log('api-output', 'API format is valid ✓', 'success');
+                } else {
+                    log('api-output', 'API format is invalid (missing fields)', 'error');
+                }
+            } catch (e) {
+                log('api-output', `Error: ${e.message}`, 'error');
+                log('api-output', 'Check if backend server is running on localhost:5000', 'warning');
+            }
+        }
+
+        // Start Full Test
+        async function startFullTest() {
+            clearLog('flow-output');
+            log('flow-output', 'Starting full voice assistant test...', 'info');
+
+            // Check capabilities
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const hasSynthesis = !!window.speechSynthesis;
+            const hasMicrophone = !!navigator.mediaDevices?.getUserMedia;
+
+            if (!SR) {
+                log('flow-output', '❌ Speech Recognition not available', 'error');
+                return;
+            }
+            if (!hasSynthesis) {
+                log('flow-output', '❌ Speech Synthesis not available', 'error');
+                return;
+            }
+            if (!hasMicrophone) {
+                log('flow-output', '⚠️ Microphone API may not be available', 'warning');
+            }
+
+            log('flow-output', '✓ All required components available', 'success');
+
+            // Test API
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'test',
+                        context: { page: 'test.html', form_state: {}, history: [] },
+                        language: 'en-IN'
+                    })
+                });
+
+                if (!response.ok) {
+                    log('flow-output', '❌ API is not responding', 'error');
+                    return;
+                }
+
+                log('flow-output', '✓ API is working', 'success');
+            } catch (e) {
+                log('flow-output', `❌ API Error: ${e.message}`, 'error');
+                return;
+            }
+
+            log('flow-output', '✓ Voice Assistant is ready to use!', 'success');
+            log('flow-output', 'Go to the main page and click the 🎙️ button', 'info');
+        }
+
+        // Run on page load
+        window.onload = checkCapabilities;
+    </script>
+</body>
+</html>

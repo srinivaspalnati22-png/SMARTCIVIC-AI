@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Synthesis Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+        }
+        .test-box h2 {
+            margin-top: 0;
+            color: #1976D2;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        button:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+        .output {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid #ddd;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #F44336; }
+        .warning { color: #FF9800; }
+        .info { color: #2196F3; }
+        .voice-list {
+            list-style: none;
+            padding: 0;
+        }
+        .voice-list li {
+            padding: 8px;
+            background: #e3f2fd;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.ready { background: #c8e6c9; color: #2e7d32; }
+        .status.error { background: #ffcdd2; color: #c62828; }
+        .status.warning { background: #fff9c4; color: #f57f17; }
+    </style>
+</head>
+<body>
+    <h1>🔊 Speech Synthesis Debug Test</h1>
+
+    <div class="test-box">
+        <h2>1. Browser Capabilities</h2>
+        <div id="capabilities"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>2. Available Voices</h2>
+        <button onclick="listVoices()">📋 List All Voices</button>
+        <ul id="voices-list" class="voice-list"></ul>
+        <div id="voices-output" class="output"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>3. Simple Speech Test</h2>
+        <label>
+            Text: <input type="text" id="text-input" value="Hello, this is a test" style="width: 300px; padding: 5px;">
+        </label><br><br>
+        <label>
+            Language:
+            <select id="lang-select" style="padding: 5px;">
+                <option value="en-US">English (US)</option>
+                <option value="en-IN">English (India)</option>
+                <option value="hi-IN">Hindi</option>
+                <option value="ta-IN">Tamil</option>
+                <option value="te-IN">Telugu</option>
+            </select>
+        </label><br><br>
+        <button onclick="testSimpleSpeech()">🔊 Test Simple Speech</button>
+        <button onclick="stopSpeech()">⏹️ Stop</button>
+        <div id="speech-output" class="output"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>4. Advanced Voice Selection Test</h2>
+        <button onclick="testVoiceSelection()">🎯 Test Voice Selection Logic</button>
+        <div id="selection-output" class="output"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>5. Test with Voice Assistant Code</h2>
+        <button onclick="testWithAssistant()">🤖 Test Voice Assistant speak()</button>
+        <div id="assistant-output" class="output"></div>
+    </div>
+
+    <script>
+        const logOutput = {};
+
+        function log(key, msg, type = 'info') {
+            const now = new Date().toLocaleTimeString();
+            const prefix = {
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'info': 'ℹ️'
+            }[type] || 'ℹ️';
+
+            const line = `<div class="${type}">${prefix} [${now}] ${msg}</div>`;
+
+            if (!logOutput[key]) {
+                logOutput[key] = '';
+            }
+            logOutput[key] += line;
+
+            const el = document.getElementById(key);
+            if (el) {
+                el.innerHTML = logOutput[key];
+                el.scrollTop = el.scrollHeight;
+            }
+        }
+
+        function clearLog(key) {
+            logOutput[key] = '';
+            const el = document.getElementById(key);
+            if (el) el.innerHTML = '';
+        }
+
+        // Check capabilities
+        function checkCapabilities() {
+            const cap = document.getElementById('capabilities');
+            const synthesis = !!window.speechSynthesis;
+            const speaking = synthesis && typeof window.speechSynthesis.speaking === 'boolean';
+            const cancel = synthesis && typeof window.speechSynthesis.cancel === 'function';
+            const speak = synthesis && typeof window.speechSynthesis.speak === 'function';
+
+            let html = '';
+            html += `<div class="status ${synthesis ? 'ready' : 'error'}">
+                ${synthesis ? '✅' : '❌'} Speech Synthesis API: ${synthesis ? 'Available' : 'NOT Available'}
+            </div>`;
+
+            if (synthesis) {
+                html += `<div style="margin: 10px 0;">
+                    <div>Methods available:</div>
+                    <ul>
+                        <li>${cancel ? '✅' : '❌'} cancel() - ${cancel ? 'Available' : 'Missing'}</li>
+                        <li>${speak ? '✅' : '❌'} speak() - ${speak ? 'Available' : 'Missing'}</li>
+                        <li>${speaking ? '✅' : '❌'} speaking property - ${speaking ? 'Available' : 'Missing'}</li>
+                    </ul>
+                </div>`;
+            }
+
+            cap.innerHTML = html;
+        }
+
+        // List voices
+        function listVoices() {
+            clearLog('voices-output');
+            const voices = window.speechSynthesis.getVoices();
+
+            if (voices.length === 0) {
+                log('voices-output', 'No voices available yet. Waiting for voices to load...', 'warning');
+                window.speechSynthesis.onvoiceschanged = () => {
+                    listVoices();
+                };
+                return;
+            }
+
+            log('voices-output', `Found ${voices.length} voices:`, 'success');
+
+            const voicesList = document.getElementById('voices-list');
+            voicesList.innerHTML = '';
+
+            // Group by language code
+            const byLang = {};
+            voices.forEach(v => {
+                const langCode = v.lang.split('-')[0];
+                if (!byLang[langCode]) byLang[langCode] = [];
+                byLang[langCode].push(v);
+            });
+
+            Object.entries(byLang).forEach(([lang, vlist]) => {
+                log('voices-output', `\n${lang.toUpperCase()} (${vlist.length} voices):`, 'info');
+                vlist.forEach(v => {
+                    log('voices-output', `  - ${v.name} (${v.lang})`, 'info');
+                    const li = document.createElement('li');
+                    li.textContent = `${v.name} (${v.lang})`;
+                    voicesList.appendChild(li);
+                });
+            });
+        }
+
+        // Test simple speech
+        function testSimpleSpeech() {
+            clearLog('speech-output');
+            const text = document.getElementById('text-input').value;
+            const lang = document.getElementById('lang-select').value;
+
+            if (!text.trim()) {
+                log('speech-output', 'Please enter some text', 'error');
+                return;
+            }
+
+            log('speech-output', `Testing speech with text: "${text}"`, 'info');
+            log('speech-output', `Language: ${lang}`, 'info');
+
+            try {
+                window.speechSynthesis.cancel();
+                log('speech-output', 'Previous speech cancelled', 'info');
+            } catch (e) {
+                log('speech-output', `Error cancelling: ${e}`, 'warning');
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+
+            // Get voices and select one
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                let voice = voices.find(v => v.lang === lang);
+                if (!voice) {
+                    const langCode = lang.split('-')[0];
+                    voice = voices.find(v => v.lang.startsWith(langCode));
+                }
+                if (!voice) {
+                    voice = voices[0];
+                }
+                if (voice) {
+                    utterance.voice = voice;
+                    log('speech-output', `Using voice: ${voice.name} (${voice.lang})`, 'success');
+                }
+            } else {
+                log('speech-output', 'No voices available', 'warning');
+            }
+
+            utterance.rate = 0.95;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+
+            utterance.onstart = () => {
+                log('speech-output', '✓ Speech started', 'success');
+            };
+
+            utterance.onend = () => {
+                log('speech-output', '✓ Speech completed successfully', 'success');
+            };
+
+            utterance.onerror = (event) => {
+                log('speech-output', `✗ Speech error: ${event.error}`, 'error');
+            };
+
+            log('speech-output', `Speaking...`, 'info');
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function stopSpeech() {
+            try {
+                window.speechSynthesis.cancel();
+                log('speech-output', 'Speech stopped', 'info');
+            } catch (e) {
+                log('speech-output', `Error stopping: ${e}`, 'error');
+            }
+        }
+
+        // Test voice selection
+        function testVoiceSelection() {
+            clearLog('selection-output');
+            const voices = window.speechSynthesis.getVoices();
+
+            if (voices.length === 0) {
+                log('selection-output', 'No voices available', 'error');
+                return;
+            }
+
+            log('selection-output', `Testing voice selection logic...`, 'info');
+            const targets = ['en-IN', 'hi-IN', 'ta-IN', 'te-IN', 'en-US'];
+
+            targets.forEach(target => {
+                let selected = null;
+                log('selection-output', `\nTarget: ${target}`, 'info');
+
+                // Exact match
+                selected = voices.find(v => v.lang === target);
+                if (selected) {
+                    log('selection-output', `  ✓ Exact match: ${selected.name}`, 'success');
+                    return;
+                }
+
+                // Language code match
+                const langCode = target.split('-')[0];
+                selected = voices.find(v => v.lang.startsWith(langCode));
+                if (selected) {
+                    log('selection-output', `  ✓ Language code match (${langCode}): ${selected.name}`, 'success');
+                    return;
+                }
+
+                // English fallback
+                selected = voices.find(v => v.lang.startsWith('en'));
+                if (selected) {
+                    log('selection-output', `  ⚠️ Using English fallback: ${selected.name}`, 'warning');
+                    return;
+                }
+
+                // First voice
+                selected = voices[0];
+                log('selection-output', `  ⚠️ Using first voice: ${selected.name}`, 'warning');
+            });
+        }
+
+        // Test with voice assistant
+        function testWithAssistant() {
+            clearLog('assistant-output');
+
+            if (!window.voiceAssistant) {
+                log('assistant-output', 'Voice Assistant not loaded', 'error');
+                return;
+            }
+
+            log('assistant-output', 'Testing Voice Assistant speak() method...', 'info');
+            log('assistant-output', `Current state: ${window.voiceAssistant.currentState}`, 'info');
+            log('assistant-output', `Current language: ${window.voiceAssistant.currentLanguage}`, 'info');
+
+            window.voiceAssistant.speak('Hello from the voice assistant test. This is a test of the speech synthesis system.').then(() => {
+                log('assistant-output', 'Speech completed', 'success');
+            }).catch(e => {
+                log('assistant-output', `Error: ${e}`, 'error');
+            });
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            checkCapabilities();
+            listVoices();
+        };
+
+        // Listen for voice changes
+        if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = checkCapabilities;
+        }
+    </script>
+</body>
+</html>
