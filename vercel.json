@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/app.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "backend/app.py" },
+    { "src": "/voice-ai", "dest": "backend/app.py" },
+    { "src": "/analyze", "dest": "backend/app.py" },
+    { "src": "/image", "dest": "backend/app.py" },
+    { "src": "/heatmap", "dest": "backend/app.py" },
+    { "src": "/metrics", "dest": "backend/app.py" },
+    { "src": "/admin/complaints", "dest": "backend/app.py" },
+    { "src": "/admin/update", "dest": "backend/app.py" },
+    { "src": "/admin/delete", "dest": "backend/app.py" },
+    { "src": "/admin/clear-all", "dest": "backend/app.py" },
+    { "src": "/citizen/complaints", "dest": "backend/app.py" },
+    { "src": "/(.*)", "dest": "frontend/$1" },
+    { "src": "/", "dest": "frontend/index.html" }
+  ]
+}
