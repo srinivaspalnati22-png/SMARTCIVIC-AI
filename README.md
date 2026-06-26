@@ -1,4 +1,5 @@
 # SmartCivic AI 🏙️
+live url link:https://smartcivicai.vercel.app/
 
 An AI-powered civic complaint management platform for Indian citizens. Report infrastructure issues (roads, water, electricity, sanitation) using voice or text, get real-time status tracking, and receive government department escalation — all in multiple Indian languages.
 
